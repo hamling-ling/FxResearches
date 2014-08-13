@@ -51,21 +51,27 @@ void printHistoryHeader(const HistoryHeader& header)
     cout << "last_sync : " << put_time(localtime(&tmp), "%F %T") << endl;
 }
 
-void printRate(const RateInfo& rate)
+void printRate(const RateInfo& rate, ostream& ost)
 {
     time_t tmp = rate.ctm;
-    cout << put_time(std::localtime(&tmp), "%F %T");
-    cout << "," << rate.open;
-    cout << "," << rate.low;
-    cout << "," << rate.high;
-    cout << "," << rate.close;
-    cout << "," << rate.vol << endl;
+    ost << put_time(std::localtime(&tmp), "%F %T");
+    ost << "," << rate.open;
+    ost << "," << rate.low;
+    ost << "," << rate.high;
+    ost << "," << rate.close;
+    ost << "," << rate.vol << endl;
 }
 
 int main(int argc, const char * argv[])
 {
+    if(argc < 2) {
+        cout << "need to give hst file and output file" << endl;
+        cout << "ex) hstconverter [hst file] [output file]" << endl;
+        return 1;
+    }
+    
     ifstream ifs;
-    ifs.open("USDJPY.hst", ios::in | ios::binary);
+    ifs.open(argv[1], ios::in | ios::binary);
     if(!ifs) {
         cout << "file open error" << endl;
         return 1;
@@ -75,24 +81,29 @@ int main(int argc, const char * argv[])
     ifs.read((char*)&header, sizeof(header));
     if(ifs.bad()) {
         cout << "file read error" << endl;
-        ifs.close();
         return 1;
     }
     
     printHistoryHeader(header);
+    
+    ofstream ofs;
+    ofs.open(argv[2], ios::out | ios::trunc);
+    if(!ofs.is_open()) {
+        cout << "failed to create a file : " << argv[2] << endl;
+        return 1;
+    }
     
     RateInfo rate;
     while(!ifs.eof()) {
         ifs.read((char*)&rate, 44);
         if(ifs.bad()) {
             cout << "file read error" << endl;
-            ifs.close();
             return 1;
         }
-        printRate(rate);
+        printRate(rate, ofs);
     }
     
-    ifs.close();
+    cout << "done" << endl;
     
     return 0;
 }
